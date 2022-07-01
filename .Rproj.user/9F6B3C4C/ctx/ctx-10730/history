@@ -1,0 +1,59 @@
+# Prediction of Health Insurance Costs
+# Installing Packages
+install.packages("tidyverse")
+install.packages("psych")
+install.packages("ggridges")
+install.packages("broom.mixed")
+install.packages("viridis")
+install.packages("modelr")
+install.packages("lme4")
+install.packages("patchwork")
+# Load the libraries
+library(tidyverse)
+library(psych)
+library(ggridges)
+library(broom.mixed)
+library(viridis)
+library(modelr)
+library(lme4)
+library(patchwork)
+# 1. Data Extraction
+insurance_df <- read.csv("data/insurance.csv")
+insurance_df
+## 1.1. Check for Missing Values
+insurance_df %>%
+summarise_all(
+~ sum(is.na(.))
+)
+summary(insurance_df)
+## 1.2. Change Target to Factor
+insurance_df <- insurance_df %>%
+mutate(sex = factor(sex),
+smoker = factor(smoker),
+region = factor(region),
+children = factor(children)
+)
+insurance_df
+# 2. Exploratory Data Analysis (EDA)
+## 2.1 Insurance Variables
+insurance_df %>%
+ggplot(aes(charges, ..density.., fill = I("#d45087"))) +
+geom_histogram(bins = 50) +
+geom_density()+
+theme(legend.position = "none")
+tibble(low_charges = nrow(filter(insurance_df,charges<15000 )),
+middle_charges =  nrow(filter(insurance_df,charges>=15000 & charges<50000)),
+high_charges = nrow(filter(insurance_df, charges>=50000)),
+)
+## 2.2 Age Variables
+insurance_df %>%
+ggplot(aes(age, fill = I("#d45087")))+
+geom_bar()+
+theme(legend.position = "none")
+p1 <- insurance_df %>%
+ggplot(aes(age, charges))+
+geom_point(color = I("#d45087"))
+p2 <- insurance_df %>%
+ggplot(aes(age, charges, color = smoker))+
+geom_point()
+p1+p2

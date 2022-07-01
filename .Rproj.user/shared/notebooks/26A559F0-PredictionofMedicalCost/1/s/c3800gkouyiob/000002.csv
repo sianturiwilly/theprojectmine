@@ -1,0 +1,4 @@
+"0","insurance_df <- read.csv(""data/insurance.csv"")"
+"2","cannot open file 'data/insurance.csv': No such file or directory"
+"2","Error in file(file, ""rt"") : cannot open the connection
+"

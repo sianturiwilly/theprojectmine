@@ -1,0 +1,198 @@
+# Simple Linear Regression
+women_df <- women
+fit.lm <- lm(formula = weight ~ height, data = women_df)
+summary(fit.lm)
+# Actual Weight
+weight_act <- women_df$weight
+# Predicted Weight
+weight_pred <- fitted(fit.lm)
+# Error (Actual - Predicted)
+weight_error <- residuals(fit.lm)
+plot(women_df$height, women_df$weight,
+xlab = "Height", ylab = "Weight")
+abline(fit.lm)
+# Polinomial Regression
+fit.lm2 <- lm(formula = weight ~ height + I(height^2),
+data = women_df)
+summary(fit.lm2)
+plot(women_df$height, women_df$weight,
+xlab = "Height", ylab = "Weight")
+lines(women_df$height, fitted(fit.lm2))
+# Multiple Linear Regression
+# state.x77
+state_df <- as.data.frame(state.x77[ , c("Murder", "Population",
+"Illiteracy", "Income",
+"Frost")])
+install.packages("car")
+install.packages("carData")
+library(car)
+cor(state_df)
+scatterplot(state_df$Illiteracy, state_df$Murder)
+fit.lm3 <- lm(formula = Murder ~ ., data = state_df)
+summary(fit.lm3)
+# Multiple Linear Regression with Interaction
+mtcars_df <- mtcars
+fit.ireg <- lm(formula = mpg ~ hp + wt + hp:wt,
+data = mtcars_df)
+summary(fit.ireg)
+# Step 1: Load Data (mtcars predict mpg)
+mtcars_df <- mtcars
+# Step 2: Divide data into train and test data
+# ratio = 80:20, set seed = 3101
+m <- nrow(mtcars_df)
+set.seed(3101)
+train_idx <- sample(m, m * 0.8)
+train_df <- mtcars_df[train_idx, ]
+test_df <- mtcars_df[-train_idx, ]
+sort(train_idx)
+# Step 3: Train the model (Free to choose features)
+cor(train_df)
+# 3.1. Simple Linear Regression
+fit.linreg <- lm(formula = mpg ~ cyl, data = train_df)
+# 3.2. Polynomial Linear Regression
+fit.polyreg <- lm(formula = mpg ~ cyl + I(cyl^2), data = train_df)
+# 3.3. Multiple Linear Regression
+fit.multireg <- lm(formula = mpg ~ cyl + disp + hp + wt, data = train_df)
+# 3.4 MLR with Interaction
+fit.inmultireg <- lm(formula = mpg ~ cyl + disp + hp + wt + cyl:disp + wt:disp, data = train_df)
+# 3.5 Your Model
+fit.mymodel <- lm(formula = mpg ~ disp + hp + wt + I(disp^2) + hp:wt,
+data = train_df)
+performance(test_df, fit.mymodel, "My Model")
+# Step 4: Evaluate the model (MDS on test data)
+performance = function(test_df, model, model_name) {
+pred <- predict(model, test_df)
+error <- pred - test_df$mpg
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+result <- paste("RMSE of", model_name, ":",
+round(rmse, 2))
+result
+}
+performance(test_df, fit.linreg, "Simple Linear Regression")
+performance(test_df, fit.polyreg, "Polynomial Regression")
+performance(test_df, fit.multireg, "Multiple Linear Regression")
+performance(test_df, fit.inmultireg, "MLR with Interaction")
+linreg.pred <- predict(fit.linreg, test_df)
+error = linreg.pred - test_df$mpg
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+rmse
+polyreg.pred <- predict(fit.polyreg, test_df)
+error = polyreg.pred - test_df$mpg
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+rmse
+multireg.pred <- predict(fit.multireg, test_df)
+error = multireg.pred - test_df$mpg
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+rmse
+inmultireg.pred <- predict(fit.inmultireg, test_df)
+error = inmultireg.pred - test_df$mpg
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+rmse
+install.packages('readr')
+install.packages('ggplot2')
+install.packages('mlbench')
+install.packages('corrplot')
+install.packages('Amelia')
+install.packages('caret')
+install.packages('plotly')
+install.packages('caTools')
+install.packages('reshape2')
+install.packages('dplyr')
+library(readr)
+library(ggplot2)
+library(corrplot)
+library(mlbench)
+library(Amelia)
+library(plotly)
+library(reshape2)
+library(caret)
+library(caTools)
+library(dplyr)
+data("BostonHousing")
+house_df <- BostonHousing
+str(house_df)
+head(house_df)
+summary(house_df)
+corrplot(cor(select(house_df, -chas)))
+house_df %>%
+ggplot(aes(medv)) +
+stat_density()
+house_df %>%
+select(c(crim, zn, indus, nox,
+rm, age, dis, rad,
+tax, ptratio, medv, lstat)) %>%
+melt(id.vars = "medv") %>%
+ggplot(aes(x = value, y = medv, color = variable)) +
+geom_point() +
+facet_wrap(~variable, scales = "free", ncol = 2)
+# Divide data into train and test
+# train test = 75:25, seed = 3101
+m <- nrow(house_df)
+set.seed(3101)
+train_idx <- sample(m, 0.75*m)
+train_idx
+train_df <- house_df[train_idx,]
+test_df <- house_df[-train_idx,]
+# Create regression models
+fit.mlr <- lm(formula = medv ~ ., data = train_df)
+# My Model
+fit.linreg <- lm(formula = medv ~ lstat + rm + lstat, train_df)
+fit.polyreg <- lm(formula = medv ~ lstat + rm + I(lstat^2) + I(rm^2) + lstat, train_df)
+fit.multireg <- lm(formula = medv ~ lstat + rm + lstat, train_df)
+fit.inmultireg <- lm(formula = medv ~ lstat + rm + lstat, train_df)
+# Evaluate the models
+performance = function(test_df, model, model_name) {
+pred <- predict(model, test_df)
+error <- pred - test_df$medv
+mse <- mean(error ^ 2)
+rmse <- sqrt(mse)
+result <- paste("RMSE of", model_name, ":",
+round(rmse, 2))
+result
+}
+performance(test_df, fit.mlr, "Multivariate Linear Regression")
+fit.mlr<-lm(formula=medv ~rad+crim+indus+nox+tax+ptratio+lstat+rm+
+lstat:rm+tax:ptratio+rad:crim, data=train_df)
+performance(test_df, fit.mlr, "myModel ")
+install.packages('readr')
+install.packages('ggplot2')
+install.packages('mlbench')
+install.packages('corrplot')
+install.packages('Amelia')
+install.packages('caret')
+install.packages('plotly')
+install.packages('caTools')
+install.packages('reshape2')
+install.packages('dplyr')
+library(readr)
+library(ggplot2)
+library(corrplot)
+library(mlbench)
+library(Amelia)
+library(plotly)
+library(reshape2)
+library(caret)
+library(caTools)
+library(dplyr)
+data("BostonHousing")
+house_df <- BostonHousing
+str(house_df)
+head(house_df)
+summary(house_df)
+corrplot(cor(select(house_df, -chas)))
+house_df %>%
+ggplot(aes(medv)) +
+stat_density()
+house_df %>%
+select(c(crim, zn, indus, nox,
+rm, age, dis, rad,
+tax, ptratio, medv, lstat)) %>%
+melt(id.vars = "medv") %>%
+ggplot(aes(x = value, y = medv, color = variable)) +
+geom_point() +
+facet_wrap(~variable, scales = "free", ncol = 2)

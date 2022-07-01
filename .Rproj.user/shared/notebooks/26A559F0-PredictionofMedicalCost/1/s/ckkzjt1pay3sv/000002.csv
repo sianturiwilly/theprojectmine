@@ -1,0 +1,4 @@
+"0","insurance_df %>%"
+"0","  summarise_all("
+"0","    ~ sum(is.na(.))"
+"0","  )"

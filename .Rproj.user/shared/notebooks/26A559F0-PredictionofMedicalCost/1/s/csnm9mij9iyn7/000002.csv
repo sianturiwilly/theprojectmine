@@ -1,0 +1,7 @@
+"0","insurance_df <- insurance_df %>%"
+"0","  mutate(sex = factor(sex),"
+"0","         smoker = factor(smoker),"
+"0","         region = factor(region),"
+"0","         children = factor(children)"
+"0","  ) "
+"0","insurance_df"

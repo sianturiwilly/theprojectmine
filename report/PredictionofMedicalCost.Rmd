@@ -1,0 +1,354 @@
+---
+title: "Prediction of Health Insurance Costs"
+author: "Willy"
+date: "24/2/2021"
+output: html_document
+---
+```{r}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Description
+
+The topic of the dataset that I chose in this post is about predicting health insurance costs. The dataset that I took is from Kaggle. There are four algorithms that I use, including Simple Linear Regression, Polynomial Regression, Multiple Linear Regression and Multiple Linear Regression with Interaction. To get the dataset, please click [here.](https://www.kaggle.com/mirichoi0218/insurance)
+
+**Report Outline**:  
+1. Data Extraction  
+2. Exploratory Data Analysis (EDA)  
+3. Remove Outliers  
+4. Modelling  
+5. Evaluate the Model  
+6. Recomendation
+
+## Load the Libraries
+
+The following are the packages that need to be installed:
+
+```{r}
+library(tidyverse)
+library(psych)
+library(ggridges)
+library(broom.mixed)
+library(viridis)
+library(modelr)
+library(lme4)
+library(patchwork)
+```
+
+## 1. Data Extraction
+
+This dataset is downloaded from Kaggle and saved in the data folder. We use **read.csv()** function to read the dataset and **insurance_df** as a data frame.
+
+```{r}
+insurance_df <-  read.csv("C:/Users/lenovo/Documents/theprojectmine/data/insurance.csv")
+```
+
+## 1.1. Check for Missing Values
+
+This section is a check whether there is a missing value or not.
+
+```{r}
+insurance_df %>%
+  summarise_all(
+    ~ sum(is.na(.))
+  )
+```
+
+## 1.2. Change Target to Factor
+
+This section represents any of the factors that affect the cost of health insurance.
+
+```{r}
+insurance_df <- insurance_df %>%
+  mutate(sex = factor(sex),
+         smoker = factor(smoker),
+         region = factor(region),
+         children = factor(children)
+  )
+```
+
+## 2. Exploratory Data Analysis
+
+### 2.1. Charges Variables
+
+In this section, it is a variable part of health insurance costs.
+
+```{r}
+insurance_df %>%
+  ggplot(aes(charges, ..density.., fill = I("#d45087"))) +
+  geom_histogram(bins = 50) +
+  geom_density()+
+  theme(legend.position = "none")
+
+tibble(low_charges = nrow(filter(insurance_df,charges<15000 )),
+       middle_charges =  nrow(filter(insurance_df,charges>=15000 & charges<50000)),
+       high_charges = nrow(filter(insurance_df, charges>=50000)),
+)
+```
+
+### 2.2. Age Variables
+
+In this section, it is a variable part of a person's age.
+
+```{r}
+insurance_df %>%
+  ggplot(aes(age, fill = I("#d45087")))+
+  geom_bar()+ 
+  theme(legend.position = "none")
+
+p1 <- insurance_df %>% 
+  ggplot(aes(age, charges))+
+  geom_point(color = I("#d45087"))
+
+p2 <- insurance_df %>% 
+  ggplot(aes(age, charges, color = smoker))+
+  geom_point()
+
+p1+p2
+```
+
+### 2.3. Sex Variables
+
+In this section, it is part of the gender variable.
+
+```{r}
+p1 <- insurance_df %>%
+  count(sex) %>% 
+  ggplot(aes(sex, n, fill = I("#d45087")))+
+  geom_col()+
+  theme(legend.position = "none")
+
+p2 <- insurance_df %>% 
+  ggplot(aes(charges, sex, fill = sex)) +
+  ggridges::geom_density_ridges()
+
+p3 <- insurance_df %>% 
+  ggplot(aes(sex, charges, fill = sex))+
+  geom_boxplot()
+
+(p1+p2)/p3
+```
+
+### 2.4. BMI Variables
+
+In this section, is the variable part of body weight.
+
+```{r}
+p1 <- insurance_df %>%
+  ggplot(aes(x = bmi, y = stat(density))) +
+  geom_histogram( aes(fill = I("#d45087")), bins = 50) +
+  theme(legend.position = "none") +
+  geom_density()
+
+p2 <- insurance_df %>% 
+  ggplot(aes(x = bmi, charges, color = charges)) +
+  geom_point() +
+  scale_color_viridis(option = "E")
+
+p3 <- insurance_df %>% 
+  ggplot(aes(factor(age), bmi, color = I("#d45087"))) +
+  geom_point() +
+  geom_jitter() +
+  stat_summary(fun = mean, colour = "blue", geom = "point", size = 5)
+
+(p1+p2)/p3
+```
+
+### 2.5. The Number of Children
+
+In this section, it is a variable part of the number of children of that person.
+
+```{r}
+p1 <- insurance_df %>%
+  count(children) %>% 
+  ggplot(aes(children, n))+
+  geom_col( aes(fill = I("#d45087")))+
+  theme(legend.position = "none")
+
+p2 <- insurance_df %>% 
+  ggplot(aes(children, charges, fill = children))+
+  geom_boxplot()
+
+p1+p2
+```
+
+### 2.6. Smoker Variables
+
+In this section, it is a variable part of whether the person smokes or not.
+
+```{r}
+p1 <- insurance_df %>%
+  ggplot(aes(smoker,charges, fill = smoker))+
+  geom_boxplot()
+
+p2 <- insurance_df %>%
+  ggplot(aes(charges, fill = smoker, alpha = 0.5))+
+  geom_density()
+
+p1/p2
+```
+
+### 2.7. Region Variables
+
+In this section, it is a variable part based on where the person lives.
+
+```{r}
+p1 <- insurance_df %>%
+  count(region) %>% 
+  ggplot(aes(region, n, width = 0.7, fill = I("#d45087")))+
+  geom_col()+
+  coord_flip()+
+  theme(legend.position = "none")
+
+p2 <- insurance_df %>% 
+  ggplot(aes(charges, region, fill = region)) +
+  ggridges::geom_density_ridges()
+
+p3 <- insurance_df %>% 
+  ggplot(aes(region, charges, fill = region))+
+  geom_boxplot()+
+  coord_flip()
+
+p1+(p2/p3)
+```
+
+## 3. Remove Outliers
+
+### 3.1. Get Outliers Values
+
+In this section, it is a part of getting the outliers value.
+
+```{r}
+outliers_charges <- boxplot.stats(insurance_df$charges)$out
+outliers_charges
+```
+
+### 3.2. Get Index of Outliers
+
+In this section, it is part of getting the index from the outliers.
+
+```{r}
+outliers_ind <- which(insurance_df$charges %in% c(outliers_charges))
+outliers_ind
+```
+
+### 3.3. Data With Outliers
+
+In this section, is the part using data with outliers.
+
+```{r}
+outliers_data <- insurance_df[outliers_ind, ]
+insurance_df[outliers_ind, ]
+```
+
+### 3.4. Data Without Outliers
+
+In this section, it is a part of using data without outliers.
+
+```{r}
+insurance_df[-outliers_ind, ]
+insurance_df_no <- insurance_df[-outliers_ind,]
+```
+
+### 3.5 One Hot Encoder
+
+In this section, it is one hot encoder.
+
+```{r}
+library(caret)
+dmy = dummyVars(" ~ .", data = insurance_df_no[, -7])
+encode_df = data.frame(predict(dmy, newdata = insurance_df_no[, -7]))
+encode_df$charges <- insurance_df_no$charges
+```
+
+### 3.6. Divide Data Into Train and Test
+
+This section is dividing the data into two, namely train and test.
+
+```{r}
+m <- nrow(insurance_df_no)
+set.seed(2021)
+train_idx <- sample(m, m * 0.8)
+
+train_df <- insurance_df_no[train_idx, ]
+test_df <- insurance_df_no[-train_idx, ]
+```
+
+## 4. Modelling
+
+### 4.1. Simple Linear Regression
+
+This section uses Simple Linear Regression.
+
+```{r}
+fit.linreg <- lm(charges ~ smoker+age+bmi+children+region, data = train_df)
+summary(fit.linreg)
+```
+
+### 4.2. Polynomial Regression
+
+This section uses Polynomial Regression.
+
+```{r}
+fit.polyreg <- lm(charges ~ smoker+age+bmi+children+region+I(age^2)+I(bmi^2), data = train_df)
+summary(fit.polyreg)
+```
+
+### 4.3. Multiple Linear Regression
+
+This section uses Multiple Linear Regression.
+
+```{r}
+fit.multireg <- lm(formula = charges ~ ., data = train_df)
+summary(fit.multireg)
+```
+
+### 4.4. Multiple Linear Regression with Interaction
+
+This section uses Multiple Linear Regression with Interaction.
+
+```{r}
+fit.inmultireg <- lm(charges ~ smoker+age+bmi+children+region+I(age^2)+I(bmi^2)+age:bmi, data = train_df)
+summary(fit.inmultireg)
+```
+
+## 5. Evaluate the Model
+
+This section evaluates the computational results of several types of regression models.
+
+```{r}
+performance = function(test_df, model, model_name) {
+  
+  pred <- predict(model, test_df)
+  error <- pred - test_df$charges
+  mse <- mean(error ^ 2)
+  rmse <- sqrt(mse)
+  
+  result <- paste("RMSE of", model_name, ":",
+                  round(rmse, 2))
+  result
+}
+
+performance(test_df, fit.linreg, "Simple Linear Regression")
+performance(test_df, fit.polyreg, "Polynomial Regression")
+performance(test_df, fit.multireg, "Multiple Linear Regression")
+performance(test_df, fit.inmultireg, "MLR with Interaction")
+```
+
+### 5.1. Scatterplot
+
+For this section, display a graph of the error count results of the four different types of regression models.
+
+```{r}
+fit.inmultireg <- lm(charges ~ smoker+age+bmi+children+region+I(age^2)+I(bmi^2)+age:bmi, data = train_df)
+summary(fit.inmultireg)
+```
+
+## 6. Recommendation
+
+1. Of the four types of regression models we use, the smaller error count is 4476.75 (Polynomial Regression).
+2. Factors that influence the cost of health insurance are weight, age, smoking and gender.
+3. Based on the results of the graph, the prediction of health insurance costs is below 20,000.
